@@ -9,8 +9,9 @@ import (
 	"io"
 	"reflect"
 	"strings"
+	"unicode"
 
-	"github.com/skia-dev/go2ts/typescript"
+	"github.com/xx1906/go2ts/typescript"
 )
 
 // ignoreNilPolicy determines whether or not nil values in Go types should be reflected in the
@@ -340,7 +341,12 @@ func (g *Go2TS) addInterfaceDeclaration(structType reflect.Type, interfaceName, 
 
 	// Make sure we have a name for the interface, which could be anonymous.
 	if interfaceName == "" {
-		interfaceName = strings.Title(structType.Name())
+		name := structType.Name()
+		if len(name) > 0 {
+			runes := []rune(name)
+			runes[0] = unicode.ToUpper(runes[0])
+			interfaceName = string(runes)
+		}
 	}
 	if interfaceName == "" {
 		interfaceName = g.getAnonymousInterfaceName()
@@ -476,6 +482,19 @@ func (g *Go2TS) populateInterfaceDeclarationProperties(interfaceDeclaration *typ
 			propertyIgnoreNilPolicy = ignoreNil
 		}
 		propertyType := g.reflectTypeToTypeScriptType(structField.Type, interfaceDeclaration.Namespace, propertyIgnoreNilPolicy, implicitlyDiscovered)
+
+		// If the JSON tag contains ",string", force the TypeScript type to be string.
+		// This matches Go's json.Marshal behavior where numeric types are serialized as strings.
+		hasStringTag := false
+		for i := 1; i < len(jsonTag); i++ {
+			if jsonTag[i] == "string" {
+				hasStringTag = true
+				break
+			}
+		}
+		if hasStringTag {
+			propertyType = typescript.String
+		}
 
 		// We mark the property as optional if the field is tagged with "omitempty".
 		markedAsOptional := len(jsonTag) > 1 && jsonTag[1] == "omitempty"

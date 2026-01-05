@@ -1,0 +1,39 @@
+[1mdiff --git a/README.md b/README.md[m
+[1mindex 5d198f7..eac0803 100644[m
+[1m--- a/README.md[m
+[1m+++ b/README.md[m
+[36m@@ -1,23 +1,8 @@[m
+[31m-**THIS REPOSITORY IS ARCHIVED**. Code moved to the Skia Infrastructure repository[m
+[31m-[here](https://skia.googlesource.com/buildbot/+/28404b632bd4830fe00185f5db86cfad4cc63abb/go/go2ts)[m
+[31m-(see [CL](https://skia-review.googlesource.com/c/buildbot/+/686339)).[m
+[31m-[m
+[31m-# go2ts[m
+[31m-[m
+[31m-![Go](https://github.com/skia-dev/go2ts/workflows/Go/badge.svg?branch=master)[m
+[31m-[m
+[31m-An extremely simple and powerful Go to Typescript generator. It can handle all[m
+[31m-JSON serializable Go types and also has the ability to define TypeScript union[m
+[31m-types for your enum-like types.[m
+[31m-[m
+[31m-Inspired by [https://github.com/OneOfOne/struct2ts](https://github.com/OneOfOne/struct2ts).[m
+[31m-[m
+[31m-This module does not supply a command-line interface. Just write a short Go[m
+[31m-program like the example below to generate your TypeScript files.[m
+[32m+[m[32m# covert go struct 2 typescript interface inspired by [go2ts](https://github.com/skia-dev/go2ts/)[m
+ [m
+ ## Install[m
+ [m
+[31m-    go get github.com/skia-dev/go2ts[m
+[32m+[m[32m    go get github.com/xx1906/go2ts[m
+ [m
+ ## Example[m
+ [m
+[36m@@ -29,7 +14,7 @@[m [mimport ([m
+ 	"log"[m
+ 	"os"[m
+ [m
+[31m-	"github.com/skia-dev/go2ts"[m
+[32m+[m	[32m"github.com/xx1906/go2ts"[m
+ )[m
+ [m
+ func main() {[m
