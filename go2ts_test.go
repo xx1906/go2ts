@@ -158,7 +158,7 @@ func TestRender_ComplexStruct_Success(t *testing.T) {
 		Mode                                 Mode
 		InlineStruct                         struct{ A int }
 		Array                                [3]string
-		skipped                              bool
+		_                                    bool // skipped field for testing
 		Offset                               Offset
 		Color                                color.Alpha
 		Direction                            Direction

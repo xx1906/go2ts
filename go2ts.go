@@ -9,6 +9,7 @@ import (
 	"io"
 	"reflect"
 	"strings"
+	"unicode"
 
 	"github.com/xx1906/go2ts/typescript"
 )
@@ -340,7 +341,12 @@ func (g *Go2TS) addInterfaceDeclaration(structType reflect.Type, interfaceName, 
 
 	// Make sure we have a name for the interface, which could be anonymous.
 	if interfaceName == "" {
-		interfaceName = strings.Title(structType.Name())
+		name := structType.Name()
+		if len(name) > 0 {
+			runes := []rune(name)
+			runes[0] = unicode.ToUpper(runes[0])
+			interfaceName = string(runes)
+		}
 	}
 	if interfaceName == "" {
 		interfaceName = g.getAnonymousInterfaceName()

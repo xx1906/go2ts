@@ -35,7 +35,7 @@ func TestLiteralType_ToTypeScript_InvalidLiteral_Panics(t *testing.T) {
 	})
 }
 
-func TestArrayType_ToTypeScript_Sucess(t *testing.T) {
+func TestArrayType_ToTypeScript_Success(t *testing.T) {
 	arrayType := ArrayType{ItemsType: String}
 	assert.Equal(t, "string[]", arrayType.ToTypeScript())
 
