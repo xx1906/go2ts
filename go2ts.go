@@ -6,6 +6,8 @@ package go2ts
 import (
 	"fmt"
 	"go/ast"
+	"go/parser"
+	"go/token"
 	"io"
 	"reflect"
 	"strings"
@@ -40,6 +42,10 @@ type Go2TS struct {
 
 	// anonymousCount keeps track of the number of anonymous structs we've had to name.
 	anonymousCount int
+
+	// comments maps struct type names and field names to their comments.
+	// Key format: "TypeName" for struct comment, "TypeName.FieldName" for field comment.
+	comments map[string]string
 }
 
 // New returns a new *Go2TS.
@@ -47,6 +53,7 @@ func New() *Go2TS {
 	ret := &Go2TS{
 		typeDeclarations:        map[reflect.Type]typescript.TypeDeclaration{},
 		typeDeclarationsInOrder: []typescript.TypeDeclaration{},
+		comments:                map[string]string{},
 	}
 	return ret
 }
@@ -58,6 +65,63 @@ func (g *Go2TS) getOrSaveTypeDeclaration(reflectType reflect.Type, typeDeclarati
 	g.typeDeclarations[reflectType] = typeDeclaration
 	g.typeDeclarationsInOrder = append(g.typeDeclarationsInOrder, typeDeclaration)
 	return typeDeclaration
+}
+
+// ParseCommentsFromSource parses Go source code and extracts comments from structs and fields.
+// The source can be a file path or Go source code string.
+func (g *Go2TS) ParseCommentsFromSource(source string) error {
+	fset := token.NewFileSet()
+	var file *ast.File
+	var err error
+
+	// Try to parse as file path first, then as source code
+	file, err = parser.ParseFile(fset, source, nil, parser.ParseComments)
+	if err != nil {
+		// If parsing as file fails, try parsing as source code
+		file, err = parser.ParseFile(fset, "", source, parser.ParseComments)
+		if err != nil {
+			return fmt.Errorf("failed to parse source: %w", err)
+		}
+	}
+
+	ast.Inspect(file, func(n ast.Node) bool {
+		switch x := n.(type) {
+		case *ast.GenDecl:
+			if x.Tok == token.TYPE {
+				for _, spec := range x.Specs {
+					if ts, ok := spec.(*ast.TypeSpec); ok {
+						if st, ok := ts.Type.(*ast.StructType); ok {
+							// Extract struct comment
+							structName := ts.Name.Name
+							if x.Doc != nil {
+								commentText := strings.TrimSpace(x.Doc.Text())
+								if commentText != "" {
+									g.comments[structName] = commentText
+								}
+							}
+
+							// Extract field comments
+							for _, field := range st.Fields.List {
+								if len(field.Names) > 0 {
+									fieldName := field.Names[0].Name
+									if field.Doc != nil {
+										commentText := strings.TrimSpace(field.Doc.Text())
+										if commentText != "" {
+											key := fmt.Sprintf("%s.%s", structName, fieldName)
+											g.comments[key] = commentText
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return true
+	})
+
+	return nil
 }
 
 // Add a type that needs a TypeScript definition.
@@ -353,10 +417,18 @@ func (g *Go2TS) addInterfaceDeclaration(structType reflect.Type, interfaceName, 
 	}
 
 	// Create the interface declaration.
+	// Get struct comment if available
+	structComment := ""
+	if structType.Name() != "" {
+		if comment, ok := g.comments[structType.Name()]; ok {
+			structComment = comment
+		}
+	}
 	interfaceDeclaration := &typescript.InterfaceDeclaration{
 		Namespace:  namespace,
 		Identifier: interfaceName,
 		Properties: []typescript.PropertySignature{},
+		Comment:    structComment,
 	}
 
 	// Save the interface declaration before populating its fields. This guarantees that we won't get
@@ -499,11 +571,21 @@ func (g *Go2TS) populateInterfaceDeclarationProperties(interfaceDeclaration *typ
 		// We mark the property as optional if the field is tagged with "omitempty".
 		markedAsOptional := len(jsonTag) > 1 && jsonTag[1] == "omitempty"
 
+		// Get field comment if available
+		fieldComment := ""
+		if structType.Name() != "" {
+			key := fmt.Sprintf("%s.%s", structType.Name(), structField.Name)
+			if comment, ok := g.comments[key]; ok {
+				fieldComment = comment
+			}
+		}
+
 		// Create the property signature and add it to the interface declaration.
 		property := typescript.PropertySignature{
 			Identifier: propertyName,
 			Type:       propertyType,
 			Optional:   optionalFieldPolicy == recursivelyForceOptional || markedAsOptional,
+			Comment:    fieldComment,
 		}
 		interfaceDeclaration.Properties = append(interfaceDeclaration.Properties, property)
 	}
