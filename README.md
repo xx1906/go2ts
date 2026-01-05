@@ -1,23 +1,8 @@
-**THIS REPOSITORY IS ARCHIVED**. Code moved to the Skia Infrastructure repository
-[here](https://skia.googlesource.com/buildbot/+/28404b632bd4830fe00185f5db86cfad4cc63abb/go/go2ts)
-(see [CL](https://skia-review.googlesource.com/c/buildbot/+/686339)).
-
-# go2ts
-
-![Go](https://github.com/skia-dev/go2ts/workflows/Go/badge.svg?branch=master)
-
-An extremely simple and powerful Go to Typescript generator. It can handle all
-JSON serializable Go types and also has the ability to define TypeScript union
-types for your enum-like types.
-
-Inspired by [https://github.com/OneOfOne/struct2ts](https://github.com/OneOfOne/struct2ts).
-
-This module does not supply a command-line interface. Just write a short Go
-program like the example below to generate your TypeScript files.
+# covert go struct 2 typescript interface inspired by [go2ts](https://github.com/skia-dev/go2ts/)
 
 ## Install
 
-    go get github.com/skia-dev/go2ts
+    go get github.com/xx1906/go2ts
 
 ## Example
 
@@ -29,7 +14,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/skia-dev/go2ts"
+	"github.com/xx1906/go2ts"
 )
 
 func main() {
