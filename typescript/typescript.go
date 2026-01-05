@@ -256,15 +256,32 @@ type PropertySignature struct {
 	Identifier string
 	Type       Type
 	Optional   bool
+	Comment    string // Comment from Go struct field
 }
 
 // ToTypeScript converts the PropertySignature to a valid TypeScript interface property declaration.
+// Note: This method does not include indentation, as it's added by InterfaceDeclaration.ToTypeScript().
 func (p *PropertySignature) ToTypeScript() string {
+	var sb strings.Builder
+	if p.Comment != "" {
+		// Output comment as JSDoc format
+		commentLines := strings.Split(strings.TrimSpace(p.Comment), "\n")
+		for _, line := range commentLines {
+			line = strings.TrimSpace(line)
+			if line != "" {
+				// Remove "//" prefix if present
+				line = strings.TrimPrefix(line, "//")
+				line = strings.TrimSpace(line)
+				sb.WriteString(fmt.Sprintf("/** %s */\n", line))
+			}
+		}
+	}
 	optionalString := ""
 	if p.Optional {
 		optionalString = "?"
 	}
-	return fmt.Sprintf("%s%s: %s;", p.Identifier, optionalString, p.Type.ToTypeScript())
+	sb.WriteString(fmt.Sprintf("%s%s: %s;", p.Identifier, optionalString, p.Type.ToTypeScript()))
+	return sb.String()
 }
 
 // InterfaceDeclaration represents a TypeScript interface declaration.
@@ -273,6 +290,7 @@ type InterfaceDeclaration struct {
 	Namespace  string
 	Identifier string
 	Properties []PropertySignature
+	Comment    string // Comment from Go struct
 }
 
 // TypeReference implements the TypeDeclaration interface.
@@ -293,20 +311,47 @@ func (i *InterfaceDeclaration) ToTypeScript() string {
 
 	namespaced := i.Namespace != ""
 	interfaceIndentation := ""
-	propertyIndentation := "\t"
 
 	if namespaced {
 		sb.WriteString(fmt.Sprintf("export namespace %s {\n", i.Namespace))
 		interfaceIndentation = "\t"
-		propertyIndentation = "\t\t"
+	}
+
+	// Output interface comment if present
+	if i.Comment != "" {
+		commentLines := strings.Split(strings.TrimSpace(i.Comment), "\n")
+		for _, line := range commentLines {
+			line = strings.TrimSpace(line)
+			if line != "" {
+				// Remove "//" prefix if present
+				line = strings.TrimPrefix(line, "//")
+				line = strings.TrimSpace(line)
+				sb.WriteString(fmt.Sprintf("%s/** %s */\n", interfaceIndentation, line))
+			}
+		}
 	}
 
 	sb.WriteString(interfaceIndentation)
 	sb.WriteString(fmt.Sprintf("export interface %s {\n", i.Identifier))
 
 	for _, prop := range i.Properties {
-		sb.WriteString(propertyIndentation)
-		sb.WriteString(prop.ToTypeScript())
+		propStr := prop.ToTypeScript()
+		// Add indentation for properties
+		indent := "\t"
+		if namespaced {
+			indent = "\t\t"
+		}
+		// Split by newlines and add indentation to each line
+		lines := strings.Split(propStr, "\n")
+		for j, line := range lines {
+			if line != "" {
+				sb.WriteString(indent)
+				sb.WriteString(line)
+			}
+			if j < len(lines)-1 {
+				sb.WriteString("\n")
+			}
+		}
 		sb.WriteString("\n")
 	}
 
